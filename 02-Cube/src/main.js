@@ -28,8 +28,10 @@ const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 
 let vertexShaderSource = null;
 let fragmentShaderSource = null;
+let meshVertices = null;
+let meshIndices = null;
 
-let shaderPromiseArray = [];
+let dataPromiseArray = [];
 
 const vertexShaderPromise = HttpService.Get('src/shaders/VertexShader.glsl').then((data) => {
     vertexShaderSource = data;
@@ -43,9 +45,22 @@ const fragmentShaderPromse = HttpService.Get('src/shaders/FragmentShader.glsl').
     console.error(e);
 });
 
-shaderPromiseArray.push(vertexShaderPromise, fragmentShaderPromse);
+const meshPromise = HttpService.Get('src/models/cube.model.json').then((data) => {
+    try {
+        let mesh = JSON.parse(data);
+        meshVertices = mesh.vertices;
+        meshIndices = mesh.indices;
+    } catch (e) {
+        console.error(e);
+    }
+}).catch((e) => {
+    console.error(e);
+});
 
-Promise.all(shaderPromiseArray).then(draw).catch((e) => {
+
+dataPromiseArray.push(vertexShaderPromise, fragmentShaderPromse, meshPromise);
+
+Promise.all(dataPromiseArray).then(draw).catch((e) => {
     console.error(e);
 });
 
@@ -86,69 +101,7 @@ function draw() {
     }
 
 
-    const meshVertices = [
-        // Top
-        -1.0, 1.0, -1.0,   0.83, 0.3, 0.0,
-        -1.0, 1.0, 1.0,    0.83, 0.3, 0.0,
-        1.0, 1.0, 1.0,     0.83, 0.3, 0.0,
-        1.0, 1.0, -1.0,    0.83, 0.3, 0.0,
 
-        // Left
-        -1.0, 1.0, 1.0,    0.15, 0.25, 0.5,
-        -1.0, -1.0, 1.0,   0.15, 0.35, 0.5,
-        -1.0, -1.0, -1.0,  0.15, 0.45, 0.5,
-        -1.0, 1.0, -1.0,   0.15, 0.55, 0.5,
-
-        // Right
-        1.0, 1.0, 1.0,    0.25, 0.25, 0.75,
-        1.0, -1.0, 1.0,   0.25, 0.25, 0.75,
-        1.0, -1.0, -1.0,  0.25, 0.25, 0.75,
-        1.0, 1.0, -1.0,   0.25, 0.25, 0.75,
-
-        // Front
-        1.0, 1.0, 1.0,    0.0, 0.83, 0.75,
-        1.0, -1.0, 1.0,    0.0, 0.83, 0.75,
-        -1.0, -1.0, 1.0,    0.0, 0.83, 0.35,
-        -1.0, 1.0, 1.0,    0.3, 0.83, 0.85,
-
-        // Back
-        1.0, 1.0, -1.0,    0.25, 0.85, 0.15,
-        1.0, -1.0, -1.0,    0.35, 0.85, 0.15,
-        -1.0, -1.0, -1.0,    0.45, 0.85, 0.15,
-        -1.0, 1.0, -1.0,    0.55, 0.85, 0.15,
-
-        // Bottom
-        -1.0, -1.0, -1.0,   0.93, 0.1, 0.0,
-        -1.0, -1.0, 1.0,    0.93, 0.1, 0.0,
-        1.0, -1.0, 1.0,     0.83, 0.3, 0.0,
-        1.0, -1.0, -1.0,    0.83, 0.3, 0.0
-    ];
-
-    const meshIndices = [
-        // Top
-        0, 1, 2,
-        0, 2, 3,
-
-        // Left
-        5, 4, 6,
-        6, 4, 7,
-
-        // Right
-        8, 9, 10,
-        8, 10, 11,
-
-        // Front
-        13, 12, 14,
-        15, 14, 12,
-
-        // Back
-        16, 17, 18,
-        16, 18, 19,
-
-        // Bottom
-        21, 20, 22,
-        22, 20, 23
-    ];
 
     const meshBuffer = gl.createBuffer();
 
@@ -201,6 +154,15 @@ function draw() {
     drawLoop(angle, worldMatrix, identityMatrix, mWorldUniformLocation, meshIndices);
 }
 
+/**
+ * Displays the rotation of a 3D cube.
+ *
+ * @param {number} angle
+ * @param {number[]} worldMatrix
+ * @param {number[]} identityMatrix
+ * @param {number[]} mWorldUniformLocation
+ * @param {number[]} meshIndices
+ */
 function drawLoop(angle, worldMatrix, identityMatrix, mWorldUniformLocation, meshIndices) {
     angle = performance.now() / 1000 / 6 * 2 * Math.PI;
     mat4.rotate(worldMatrix, identityMatrix, angle, [0, 1, 0.5]);
